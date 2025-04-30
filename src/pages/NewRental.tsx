@@ -10,9 +10,17 @@ import { supabase } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Textarea } from '@/components/ui/textarea';
-import { PlusCircle, Trash2 } from 'lucide-react';
+import { PlusCircle, Trash2, Edit } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
+} from '@/components/ui/dialog';
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 
 interface Customer {
   id: string;
@@ -53,10 +61,13 @@ const NewRental = () => {
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
   const [totalPrice, setTotalPrice] = useState<number>(0);
+  const [manualPrice, setManualPrice] = useState<string>('');
+  const [discount, setDiscount] = useState<string>('0');
   const [notes, setNotes] = useState<string>('');
   const [rentalStatus, setRentalStatus] = useState<string>('active');
   const [needsAdjustment, setNeedsAdjustment] = useState(false);
   const [isCustomSuit, setIsCustomSuit] = useState(false);
+  const [isPriceEditing, setIsPriceEditing] = useState(false);
   
   // New customer form
   const [newCustomer, setNewCustomer] = useState(false);
@@ -73,6 +84,13 @@ const NewRental = () => {
   useEffect(() => {
     loadCustomersAndItems();
   }, []);
+
+  useEffect(() => {
+    // When manual price changes, update total price
+    if (isPriceEditing && manualPrice !== '') {
+      setTotalPrice(parseFloat(manualPrice));
+    }
+  }, [manualPrice, isPriceEditing]);
 
   const loadCustomersAndItems = async () => {
     setIsLoading(true);
@@ -118,7 +136,7 @@ const NewRental = () => {
   };
 
   const updateTotalPrice = (mainItemId: string, additionalItems: RentalItem[]) => {
-    if (!startDate || !endDate) return;
+    if (!startDate || !endDate || isPriceEditing) return;
 
     const start = new Date(startDate);
     const end = new Date(endDate);
@@ -136,7 +154,13 @@ const NewRental = () => {
     // Add prices of additional items
     const additionalPrice = additionalItems.reduce((sum, item) => sum + item.price, 0);
     
-    setTotalPrice(mainPrice + additionalPrice);
+    // Apply discount if any
+    const discountAmount = parseFloat(discount) || 0;
+    let calculatedPrice = mainPrice + additionalPrice;
+    calculatedPrice = Math.max(0, calculatedPrice - discountAmount);
+    
+    setTotalPrice(calculatedPrice);
+    setManualPrice(calculatedPrice.toString());
   };
 
   const handleAddRentalItem = () => {
@@ -180,6 +204,36 @@ const NewRental = () => {
     newItems.splice(index, 1);
     setSelectedRentalItems(newItems);
     updateTotalPrice(selectedMainItem, newItems);
+  };
+
+  const handleClearMainItem = () => {
+    setSelectedMainItem('');
+    updateTotalPrice('', selectedRentalItems);
+  };
+
+  const handleDiscountChange = (value: string) => {
+    setDiscount(value);
+    if (!isPriceEditing) {
+      updateTotalPrice(selectedMainItem, selectedRentalItems);
+    }
+  };
+
+  const togglePriceEdit = () => {
+    if (isPriceEditing) {
+      // If we're ending editing mode, update the total price
+      const newPrice = parseFloat(manualPrice);
+      if (!isNaN(newPrice) && newPrice >= 0) {
+        setTotalPrice(newPrice);
+      } else {
+        // If invalid manual price, revert to calculated price
+        updateTotalPrice(selectedMainItem, selectedRentalItems);
+      }
+    } else {
+      // Starting edit mode - initialize manual price with current total
+      setManualPrice(totalPrice.toString());
+    }
+    
+    setIsPriceEditing(!isPriceEditing);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -453,28 +507,43 @@ const NewRental = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Main Item *
                 </label>
-                <Select 
-                  value={selectedMainItem} 
-                  onValueChange={handleMainItemSelection}
-                  disabled={isLoading || (isCustomSuit && !!customSuit)}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select an item" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clothingItems.length === 0 ? (
-                      <SelectItem value="none" disabled>No items available</SelectItem>
-                    ) : (
-                      clothingItems
-                        .filter(item => !isCustomSuit || item.category === 'Custom')
-                        .map((item) => (
-                          <SelectItem key={item.id} value={item.id}>
-                            {item.name} - {item.category} (Size {item.size}) - ${item.rental_price}/day
-                          </SelectItem>
-                        ))
-                    )}
-                  </SelectContent>
-                </Select>
+                <div className="flex items-center space-x-2">
+                  <div className="flex-grow">
+                    <Select 
+                      value={selectedMainItem} 
+                      onValueChange={handleMainItemSelection}
+                      disabled={isLoading || (isCustomSuit && !!customSuit)}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select an item" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {clothingItems.length === 0 ? (
+                          <SelectItem value="none" disabled>No items available</SelectItem>
+                        ) : (
+                          clothingItems
+                            .filter(item => !isCustomSuit || item.category === 'Custom')
+                            .map((item) => (
+                              <SelectItem key={item.id} value={item.id}>
+                                {item.name} - {item.category} (Size {item.size}) - ${item.rental_price}/day
+                              </SelectItem>
+                            ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {selectedMainItem && (
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={handleClearMainItem}
+                      className="shrink-0"
+                    >
+                      <Trash2 className="h-4 w-4 text-gray-500" />
+                    </Button>
+                  )}
+                </div>
               </div>
 
               {/* Additional Items */}
@@ -632,12 +701,55 @@ const NewRental = () => {
                 />
               </div>
 
-              {/* Price */}
+              {/* Discount */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Total Price
+                  Discount ($)
                 </label>
-                <div className="text-2xl font-bold">${totalPrice.toFixed(2)}</div>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={discount}
+                  onChange={(e) => handleDiscountChange(e.target.value)}
+                  disabled={isLoading || isPriceEditing}
+                  placeholder="0.00"
+                />
+              </div>
+
+              {/* Price */}
+              <div>
+                <div className="flex items-center justify-between">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Total Price
+                  </label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={togglePriceEdit}
+                    className="h-8 px-2"
+                  >
+                    {isPriceEditing ? "Save" : (
+                      <>
+                        <Edit className="h-4 w-4 mr-1" /> 
+                        Edit
+                      </>
+                    )}
+                  </Button>
+                </div>
+                {isPriceEditing ? (
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={manualPrice}
+                    onChange={(e) => setManualPrice(e.target.value)}
+                    className="text-lg font-bold"
+                  />
+                ) : (
+                  <div className="text-2xl font-bold">${totalPrice.toFixed(2)}</div>
+                )}
               </div>
 
               <div className="pt-4">
