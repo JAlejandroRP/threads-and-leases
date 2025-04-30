@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useRequireAuth } from '@/lib/auth';
 import DashboardLayout from '../components/layout/DashboardLayout';
@@ -21,6 +20,7 @@ import {
   DialogFooter
 } from '@/components/ui/dialog';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
+import { Rental } from '@/types/rental';
 
 interface Customer {
   id: string;
@@ -119,8 +119,9 @@ const NewRental = () => {
       }
       
       setClothingItems(itemsData || []);
-    } catch (error: any) {
-      toast.error('Error loading data: ' + error.message);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      toast.error('Error loading data: ' + errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -340,8 +341,9 @@ const NewRental = () => {
 
       toast.success('Rental created successfully!');
       navigate('/rentals');
-    } catch (error: any) {
-      toast.error('Error creating rental: ' + error.message);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      toast.error('Error creating rental: ' + errorMessage);
     } finally {
       setIsLoading(false);
     }
