@@ -83,6 +83,35 @@ export interface Database {
           image_url?: string | null
         }
       }
+      rental_items: {
+        Row: {
+          id: string
+          created_at: string
+          updated_at: string
+          rental_id: string
+          clothing_item_id: string
+          price: number
+          notes: string | null
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          updated_at?: string
+          rental_id: string
+          clothing_item_id: string
+          price: number
+          notes?: string | null
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          updated_at?: string
+          rental_id?: string
+          clothing_item_id?: string
+          price?: number
+          notes?: string | null
+        }
+      }
       rentals: {
         Row: {
           id: string
@@ -92,9 +121,12 @@ export interface Database {
           clothing_item_id: string
           start_date: string
           end_date: string
-          status: 'active' | 'completed' | 'cancelled'
+          status: 'active' | 'completed' | 'cancelled' | 'pending_adjustment' | 'pending_creation' | 'ready'
           notes: string | null
           total_price: number
+          return_notes: string | null
+          return_condition: string | null
+          additional_fees: number | null
         }
         Insert: {
           id?: string
@@ -104,9 +136,12 @@ export interface Database {
           clothing_item_id: string
           start_date: string
           end_date: string
-          status?: 'active' | 'completed' | 'cancelled'
+          status?: 'active' | 'completed' | 'cancelled' | 'pending_adjustment' | 'pending_creation' | 'ready'
           notes?: string | null
           total_price: number
+          return_notes?: string | null
+          return_condition?: string | null
+          additional_fees?: number | null
         }
         Update: {
           id?: string
@@ -116,9 +151,12 @@ export interface Database {
           clothing_item_id?: string
           start_date?: string
           end_date?: string
-          status?: 'active' | 'completed' | 'cancelled'
+          status?: 'active' | 'completed' | 'cancelled' | 'pending_adjustment' | 'pending_creation' | 'ready'
           notes?: string | null
           total_price?: number
+          return_notes?: string | null
+          return_condition?: string | null
+          additional_fees?: number | null
         }
       }
     }

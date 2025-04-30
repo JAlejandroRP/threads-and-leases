@@ -9,6 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { Textarea } from '@/components/ui/textarea';
+import { PlusCircle, Trash2 } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface Customer {
   id: string;
@@ -24,6 +28,15 @@ interface ClothingItem {
   category: string;
   rental_price: number;
   available: boolean;
+  description?: string | null;
+}
+
+interface RentalItem {
+  id: string;
+  clothing_item_id: string;
+  clothing_item: ClothingItem;
+  price: number;
+  notes?: string;
 }
 
 const NewRental = () => {
@@ -32,18 +45,30 @@ const NewRental = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [clothingItems, setClothingItems] = useState<ClothingItem[]>([]);
+  const [selectedRentalItems, setSelectedRentalItems] = useState<RentalItem[]>([]);
+  const [customSuit, setCustomSuit] = useState<ClothingItem | null>(null);
 
   const [selectedCustomer, setSelectedCustomer] = useState<string>('');
-  const [selectedItem, setSelectedItem] = useState<string>('');
+  const [selectedMainItem, setSelectedMainItem] = useState<string>('');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
   const [totalPrice, setTotalPrice] = useState<number>(0);
   const [notes, setNotes] = useState<string>('');
+  const [rentalStatus, setRentalStatus] = useState<string>('active');
+  const [needsAdjustment, setNeedsAdjustment] = useState(false);
+  const [isCustomSuit, setIsCustomSuit] = useState(false);
+  
+  // New customer form
   const [newCustomer, setNewCustomer] = useState(false);
   const [customerName, setCustomerName] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
+
+  // New rental item
+  const [selectedAdditionalItem, setSelectedAdditionalItem] = useState<string>('');
+  const [additionalItemPrice, setAdditionalItemPrice] = useState<string>('');
+  const [additionalItemNotes, setAdditionalItemNotes] = useState<string>('');
 
   useEffect(() => {
     loadCustomersAndItems();
@@ -65,10 +90,16 @@ const NewRental = () => {
       const { data: itemsData, error: itemsError } = await supabase
         .from('clothing_items')
         .select('*')
-        .eq('available', true)
         .order('name');
 
       if (itemsError) throw itemsError;
+      
+      // Find custom suit item
+      const custom = itemsData?.find(item => item.category === 'Custom');
+      if (custom) {
+        setCustomSuit(custom);
+      }
+      
       setClothingItems(itemsData || []);
     } catch (error: any) {
       toast.error('Error loading data: ' + error.message);
@@ -77,27 +108,78 @@ const NewRental = () => {
     }
   };
 
-  const handleItemSelection = (itemId: string) => {
-    setSelectedItem(itemId);
-    const item = clothingItems.find((i) => i.id === itemId);
-    if (item) {
-      const start = new Date(startDate || new Date().toISOString().split('T')[0]);
-      const end = new Date(endDate || start.toISOString().split('T')[0]);
-      const days = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
-      setTotalPrice(item.rental_price * days);
-    }
+  const handleMainItemSelection = (itemId: string) => {
+    setSelectedMainItem(itemId);
+    updateTotalPrice(itemId, selectedRentalItems);
   };
 
   const handleDateChange = () => {
-    if (startDate && endDate && selectedItem) {
-      const item = clothingItems.find((i) => i.id === selectedItem);
-      if (item) {
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-        const days = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
-        setTotalPrice(item.rental_price * days);
+    updateTotalPrice(selectedMainItem, selectedRentalItems);
+  };
+
+  const updateTotalPrice = (mainItemId: string, additionalItems: RentalItem[]) => {
+    if (!startDate || !endDate) return;
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const days = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+    
+    // Calculate price for main item
+    let mainPrice = 0;
+    if (mainItemId) {
+      const mainItem = clothingItems.find(item => item.id === mainItemId);
+      if (mainItem) {
+        mainPrice = mainItem.rental_price * days;
       }
     }
+    
+    // Add prices of additional items
+    const additionalPrice = additionalItems.reduce((sum, item) => sum + item.price, 0);
+    
+    setTotalPrice(mainPrice + additionalPrice);
+  };
+
+  const handleAddRentalItem = () => {
+    if (!selectedAdditionalItem || !additionalItemPrice) {
+      toast.error('Please select an item and set a price');
+      return;
+    }
+    
+    const item = clothingItems.find(item => item.id === selectedAdditionalItem);
+    if (!item) {
+      toast.error('Selected item not found');
+      return;
+    }
+    
+    const price = parseFloat(additionalItemPrice);
+    if (isNaN(price) || price <= 0) {
+      toast.error('Please enter a valid price');
+      return;
+    }
+    
+    const newItem: RentalItem = {
+      id: `temp-${Date.now()}`, // Temporary ID
+      clothing_item_id: item.id,
+      clothing_item: item,
+      price: price,
+      notes: additionalItemNotes || undefined
+    };
+    
+    const newItems = [...selectedRentalItems, newItem];
+    setSelectedRentalItems(newItems);
+    updateTotalPrice(selectedMainItem, newItems);
+    
+    // Reset form
+    setSelectedAdditionalItem('');
+    setAdditionalItemPrice('');
+    setAdditionalItemNotes('');
+  };
+
+  const handleRemoveRentalItem = (index: number) => {
+    const newItems = [...selectedRentalItems];
+    newItems.splice(index, 1);
+    setSelectedRentalItems(newItems);
+    updateTotalPrice(selectedMainItem, newItems);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -132,34 +214,75 @@ const NewRental = () => {
       }
 
       // Validate required fields
-      if (!customerId || !selectedItem || !startDate || !endDate) {
+      if (!customerId || !selectedMainItem || !startDate || !endDate) {
         toast.error('Please fill in all required fields');
         setIsLoading(false);
         return;
       }
+      
+      // Determine status based on selections
+      let status = rentalStatus;
+      if (needsAdjustment) {
+        status = 'pending_adjustment';
+      } else if (isCustomSuit) {
+        status = 'pending_creation';
+      }
 
       // Create rental record
-      const { error: rentalError } = await supabase
+      const { data: rentalData, error: rentalError } = await supabase
         .from('rentals')
         .insert({
           customer_id: customerId,
-          clothing_item_id: selectedItem,
+          clothing_item_id: selectedMainItem,
           start_date: startDate,
           end_date: endDate,
-          status: 'active',
+          status: status,
           notes: notes,
           total_price: totalPrice
-        });
+        })
+        .select();
 
       if (rentalError) throw rentalError;
+      
+      const rentalId = rentalData?.[0]?.id;
+      if (!rentalId) throw new Error('Failed to get rental ID');
 
-      // Update clothing item availability
-      const { error: updateError } = await supabase
-        .from('clothing_items')
-        .update({ available: false })
-        .eq('id', selectedItem);
+      // Add rental items if any
+      if (selectedRentalItems.length > 0) {
+        const rentalItemsToInsert = selectedRentalItems.map(item => ({
+          rental_id: rentalId,
+          clothing_item_id: item.clothing_item_id,
+          price: item.price,
+          notes: item.notes || null
+        }));
+        
+        const { error: itemsError } = await supabase
+          .from('rental_items')
+          .insert(rentalItemsToInsert);
+          
+        if (itemsError) throw itemsError;
+      }
 
-      if (updateError) throw updateError;
+      // Update clothing item availability if not custom or pending adjustment
+      if (status === 'active') {
+        // Update main item
+        const { error: updateError } = await supabase
+          .from('clothing_items')
+          .update({ available: false })
+          .eq('id', selectedMainItem);
+
+        if (updateError) throw updateError;
+        
+        // Update additional items
+        for (const item of selectedRentalItems) {
+          const { error: itemError } = await supabase
+            .from('clothing_items')
+            .update({ available: false })
+            .eq('id', item.clothing_item_id);
+            
+          if (itemError) throw itemError;
+        }
+      }
 
       toast.success('Rental created successfully!');
       navigate('/rentals');
@@ -282,15 +405,58 @@ const NewRental = () => {
                 )}
               </div>
 
-              {/* Item Selection */}
+              {/* Special Order Types */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Order Type</label>
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center">
+                    <Checkbox 
+                      id="needs-adjustment" 
+                      checked={needsAdjustment} 
+                      onCheckedChange={(checked) => {
+                        const isChecked = checked === true;
+                        setNeedsAdjustment(isChecked);
+                        if (isChecked) setIsCustomSuit(false);
+                      }}
+                    />
+                    <label htmlFor="needs-adjustment" className="ml-2 text-sm text-gray-700">
+                      Needs Adjustment
+                    </label>
+                  </div>
+                  
+                  <div className="flex items-center">
+                    <Checkbox 
+                      id="custom-suit" 
+                      checked={isCustomSuit} 
+                      onCheckedChange={(checked) => {
+                        const isChecked = checked === true;
+                        setIsCustomSuit(isChecked);
+                        if (isChecked) {
+                          setNeedsAdjustment(false);
+                          // Auto-select custom suit item if available
+                          if (customSuit) {
+                            setSelectedMainItem(customSuit.id);
+                            updateTotalPrice(customSuit.id, selectedRentalItems);
+                          }
+                        }
+                      }}
+                    />
+                    <label htmlFor="custom-suit" className="ml-2 text-sm text-gray-700">
+                      Custom Suit
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Main Item Selection */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Clothing Item *
+                  Main Item *
                 </label>
                 <Select 
-                  value={selectedItem} 
-                  onValueChange={handleItemSelection}
-                  disabled={isLoading}
+                  value={selectedMainItem} 
+                  onValueChange={handleMainItemSelection}
+                  disabled={isLoading || (isCustomSuit && !!customSuit)}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select an item" />
@@ -299,14 +465,121 @@ const NewRental = () => {
                     {clothingItems.length === 0 ? (
                       <SelectItem value="none" disabled>No items available</SelectItem>
                     ) : (
-                      clothingItems.map((item) => (
-                        <SelectItem key={item.id} value={item.id}>
-                          {item.name} - {item.category} (Size {item.size}) - ${item.rental_price}/day
-                        </SelectItem>
-                      ))
+                      clothingItems
+                        .filter(item => !isCustomSuit || item.category === 'Custom')
+                        .map((item) => (
+                          <SelectItem key={item.id} value={item.id}>
+                            {item.name} - {item.category} (Size {item.size}) - ${item.rental_price}/day
+                          </SelectItem>
+                        ))
                     )}
                   </SelectContent>
                 </Select>
+              </div>
+
+              {/* Additional Items */}
+              <div className="space-y-4">
+                <label className="block text-sm font-medium text-gray-700">
+                  Additional Items
+                </label>
+                
+                {selectedRentalItems.length > 0 && (
+                  <div className="border rounded-md overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Item</TableHead>
+                          <TableHead>Price ($)</TableHead>
+                          <TableHead>Notes</TableHead>
+                          <TableHead className="w-[100px]">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {selectedRentalItems.map((item, index) => (
+                          <TableRow key={item.id}>
+                            <TableCell>
+                              {item.clothing_item.name} (Size: {item.clothing_item.size})
+                            </TableCell>
+                            <TableCell>${item.price.toFixed(2)}</TableCell>
+                            <TableCell>{item.notes || '-'}</TableCell>
+                            <TableCell>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => handleRemoveRentalItem(index)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+                
+                <div className="border rounded-md p-4 space-y-4">
+                  <h4 className="font-medium text-sm">Add Item</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Item
+                      </label>
+                      <Select 
+                        value={selectedAdditionalItem} 
+                        onValueChange={setSelectedAdditionalItem}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select item" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {clothingItems
+                            .filter(item => item.available && item.id !== selectedMainItem && item.category !== 'Custom')
+                            .map(item => (
+                              <SelectItem key={item.id} value={item.id}>
+                                {item.name} (${item.rental_price}/day)
+                              </SelectItem>
+                            ))
+                          }
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Price ($)
+                      </label>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={additionalItemPrice}
+                        onChange={(e) => setAdditionalItemPrice(e.target.value)}
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Notes
+                      </label>
+                      <Input
+                        value={additionalItemNotes}
+                        onChange={(e) => setAdditionalItemNotes(e.target.value)}
+                        placeholder="Optional notes"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      size="sm"
+                      onClick={handleAddRentalItem}
+                      disabled={!selectedAdditionalItem || !additionalItemPrice}
+                    >
+                      <PlusCircle className="h-4 w-4 mr-1" /> Add Item
+                    </Button>
+                  </div>
+                </div>
               </div>
 
               {/* Rental Dates */}
@@ -350,10 +623,12 @@ const NewRental = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Notes
                 </label>
-                <Input
+                <Textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   disabled={isLoading}
+                  placeholder="Add any special requirements or instructions"
+                  rows={3}
                 />
               </div>
 

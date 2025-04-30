@@ -84,38 +84,92 @@ export type Database = {
         }
         Relationships: []
       }
+      rental_items: {
+        Row: {
+          clothing_item_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          price: number
+          rental_id: string
+          updated_at: string
+        }
+        Insert: {
+          clothing_item_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          price: number
+          rental_id: string
+          updated_at?: string
+        }
+        Update: {
+          clothing_item_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          price?: number
+          rental_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rental_items_clothing_item_id_fkey"
+            columns: ["clothing_item_id"]
+            isOneToOne: false
+            referencedRelation: "clothing_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rental_items_rental_id_fkey"
+            columns: ["rental_id"]
+            isOneToOne: false
+            referencedRelation: "rentals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rentals: {
         Row: {
+          additional_fees: number | null
           clothing_item_id: string
           created_at: string
           customer_id: string
           end_date: string
           id: string
           notes: string | null
+          return_condition: string | null
+          return_notes: string | null
           start_date: string
           status: string
           total_price: number
           updated_at: string
         }
         Insert: {
+          additional_fees?: number | null
           clothing_item_id: string
           created_at?: string
           customer_id: string
           end_date: string
           id?: string
           notes?: string | null
+          return_condition?: string | null
+          return_notes?: string | null
           start_date: string
           status?: string
           total_price: number
           updated_at?: string
         }
         Update: {
+          additional_fees?: number | null
           clothing_item_id?: string
           created_at?: string
           customer_id?: string
           end_date?: string
           id?: string
           notes?: string | null
+          return_condition?: string | null
+          return_notes?: string | null
           start_date?: string
           status?: string
           total_price?: number
