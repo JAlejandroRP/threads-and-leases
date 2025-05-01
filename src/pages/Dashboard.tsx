@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useRequireAuth } from '@/lib/auth';
 import DashboardLayout from '../components/layout/DashboardLayout';
@@ -77,8 +76,23 @@ const Dashboard = () => {
           
         if (error) {
           console.error('Error fetching recent activity:', error);
-        } else {
-          setRecentActivity(recentRentals as RecentRental[]);
+        } else if (recentRentals) {
+          // Transform the data to match the expected format
+          const formattedRentals = recentRentals.map(rental => ({
+            id: rental.id,
+            created_at: rental.created_at,
+            status: rental.status,
+            // Handle the customer object correctly
+            customer: {
+              name: rental.customer?.name || 'Unknown'
+            },
+            // Handle the clothing_item object correctly
+            clothing_item: {
+              name: rental.clothing_item?.name || 'Unknown'
+            }
+          }));
+          
+          setRecentActivity(formattedRentals);
         }
           
         setStats({
