@@ -6,6 +6,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { formatDate } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
+
+interface RecentRental {
+  id: string;
+  created_at: string;
+  customer: {
+    name: string;
+  };
+  clothing_item: {
+    name: string;
+  };
+  status: string;
+}
 
 const Dashboard = () => {
   useRequireAuth();
@@ -16,6 +30,7 @@ const Dashboard = () => {
     totalCustomers: 0,
     rentalsThisMonth: 0,
   });
+  const [recentActivity, setRecentActivity] = useState<RecentRental[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -47,6 +62,25 @@ const Dashboard = () => {
           .select('*', { count: 'exact', head: true })
           .gte('created_at', firstDayOfMonth);
           
+        // Fetch recent activity
+        const { data: recentRentals, error } = await supabase
+          .from('rentals')
+          .select(`
+            id,
+            created_at,
+            status,
+            customer:customer_id(name),
+            clothing_item:clothing_item_id(name)
+          `)
+          .order('created_at', { ascending: false })
+          .limit(5);
+          
+        if (error) {
+          console.error('Error fetching recent activity:', error);
+        } else {
+          setRecentActivity(recentRentals as RecentRental[]);
+        }
+          
         setStats({
           activeRentals: activeRentals || 0,
           totalInventory: totalInventory || 0,
@@ -62,6 +96,18 @@ const Dashboard = () => {
 
     fetchDashboardData();
   }, []);
+
+  const getStatusColor = (status: string): string => {
+    switch(status) {
+      case 'active': return 'text-green-600';
+      case 'completed': return 'text-blue-600';
+      case 'cancelled': return 'text-red-600';
+      case 'pending_creation': 
+      case 'pending_adjustment': return 'text-yellow-600';
+      case 'ready': return 'text-purple-600';
+      default: return 'text-gray-600';
+    }
+  };
 
   return (
     <DashboardLayout>
@@ -170,9 +216,39 @@ const Dashboard = () => {
                     </div>
                   ))}
                 </div>
+              ) : recentActivity.length > 0 ? (
+                <div className="divide-y">
+                  {recentActivity.map((rental) => (
+                    <div 
+                      key={rental.id} 
+                      className="py-3 flex items-center justify-between cursor-pointer hover:bg-gray-50 rounded-md px-2"
+                      onClick={() => navigate(`/rentals?id=${rental.id}`)}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="h-10 w-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-bold">
+                          {rental.customer?.name.charAt(0) || '?'}
+                        </div>
+                        <div>
+                          <p className="font-medium">{rental.customer?.name || 'Unknown customer'}</p>
+                          <p className="text-sm text-gray-500">
+                            Rented: {rental.clothing_item?.name || 'Unknown item'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end">
+                        <span className={`text-sm font-medium ${getStatusColor(rental.status)}`}>
+                          {rental.status.replace('_', ' ')}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {formatDate(rental.created_at)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               ) : (
                 <div className="text-center py-8 text-gray-500">
-                  <p>Recent activity will appear here.</p>
+                  <p>No recent activity to display.</p>
                   <Button 
                     variant="link" 
                     onClick={() => navigate('/rentals')}
