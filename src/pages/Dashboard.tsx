@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useRequireAuth } from '@/lib/auth';
 import DashboardLayout from '../components/layout/DashboardLayout';
@@ -82,13 +83,17 @@ const Dashboard = () => {
             id: rental.id,
             created_at: rental.created_at,
             status: rental.status,
-            // Handle the customer object correctly
+            // Convert the customer object correctly
             customer: {
-              name: rental.customer?.name || 'Unknown'
+              name: typeof rental.customer === 'object' && rental.customer !== null 
+                ? rental.customer.name || 'Unknown' 
+                : 'Unknown'
             },
-            // Handle the clothing_item object correctly
+            // Convert the clothing_item object correctly
             clothing_item: {
-              name: rental.clothing_item?.name || 'Unknown'
+              name: typeof rental.clothing_item === 'object' && rental.clothing_item !== null
+                ? rental.clothing_item.name || 'Unknown'
+                : 'Unknown'
             }
           }));
           
