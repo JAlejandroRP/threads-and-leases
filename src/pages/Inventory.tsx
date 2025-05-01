@@ -5,15 +5,32 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { PackagePlus } from 'lucide-react';
+import { PackagePlus, Edit, Trash2, Eye, MoreHorizontal } from 'lucide-react';
 import { usePagination } from '@/hooks/use-pagination';
 import PaginationComponent from '@/components/common/PaginationComponent';
+import { 
+  DropdownMenu, 
+  DropdownMenuTrigger, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuSeparator 
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface ClothingItem {
   id: string;
@@ -45,6 +62,11 @@ const Inventory = () => {
     rental_price: '',
     image_url: ''
   });
+  const [selectedItem, setSelectedItem] = useState<ClothingItem | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [editItem, setEditItem] = useState<ClothingItem | null>(null);
 
   const { 
     currentPage, 
@@ -94,11 +116,20 @@ const Inventory = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setNewItem(prev => ({ ...prev, [name]: value }));
+    
+    if (isEditDialogOpen && editItem) {
+      setEditItem(prev => ({ ...prev, [name]: value } as ClothingItem));
+    } else {
+      setNewItem(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleSelectChange = (name: string, value: string) => {
-    setNewItem(prev => ({ ...prev, [name]: value }));
+    if (isEditDialogOpen && editItem) {
+      setEditItem(prev => ({ ...prev, [name]: value } as ClothingItem));
+    } else {
+      setNewItem(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -147,6 +178,82 @@ const Inventory = () => {
       toast.error('Error adding item: ' + error.message);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleEdit = (item: ClothingItem) => {
+    setEditItem({...item});
+    setIsEditDialogOpen(true);
+  };
+
+  const handleView = (item: ClothingItem) => {
+    setSelectedItem(item);
+    setIsViewDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = (item: ClothingItem) => {
+    setSelectedItem(item);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!selectedItem) return;
+    
+    try {
+      setIsSubmitting(true);
+      const { error } = await supabase
+        .from('clothing_items')
+        .delete()
+        .eq('id', selectedItem.id);
+
+      if (error) throw error;
+      
+      toast.success('Item deleted successfully!');
+      setIsDeleteDialogOpen(false);
+      fetchInventory();
+    } catch (error: any) {
+      toast.error('Error deleting item: ' + error.message);
+    } finally {
+      setIsSubmitting(false);
+      setSelectedItem(null);
+    }
+  };
+
+  const handleUpdateSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editItem) return;
+    
+    if (!editItem.name || !editItem.size || !editItem.category || !editItem.condition) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+
+      const { error } = await supabase
+        .from('clothing_items')
+        .update({
+          name: editItem.name,
+          description: editItem.description,
+          size: editItem.size,
+          category: editItem.category,
+          condition: editItem.condition,
+          rental_price: editItem.rental_price,
+          image_url: editItem.image_url
+        })
+        .eq('id', editItem.id);
+
+      if (error) throw error;
+
+      toast.success('Item updated successfully!');
+      setIsEditDialogOpen(false);
+      fetchInventory();
+    } catch (error: any) {
+      toast.error('Error updating item: ' + error.message);
+    } finally {
+      setIsSubmitting(false);
+      setEditItem(null);
     }
   };
 
@@ -289,6 +396,217 @@ const Inventory = () => {
           </DialogContent>
         </Dialog>
 
+        {/* Edit Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit Inventory Item</DialogTitle>
+            </DialogHeader>
+            {editItem && (
+              <form onSubmit={handleUpdateSubmit}>
+                <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-name">Item Name *</Label>
+                    <Input 
+                      id="edit-name" 
+                      name="name"
+                      value={editItem.name} 
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-description">Description</Label>
+                    <Textarea 
+                      id="edit-description" 
+                      name="description"
+                      value={editItem.description || ''} 
+                      onChange={handleInputChange}
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-size">Size *</Label>
+                      <Input 
+                        id="edit-size" 
+                        name="size"
+                        value={editItem.size} 
+                        onChange={handleInputChange}
+                        required
+                        placeholder="S, M, L, XL, etc."
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-category">Category *</Label>
+                      <Select 
+                        value={editItem.category} 
+                        onValueChange={(value) => handleSelectChange('category', value)}
+                        required
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Dress">Dress</SelectItem>
+                          <SelectItem value="Suit">Suit</SelectItem>
+                          <SelectItem value="Gown">Gown</SelectItem>
+                          <SelectItem value="Jacket">Jacket</SelectItem>
+                          <SelectItem value="Pants">Pants</SelectItem>
+                          <SelectItem value="Shirt">Shirt</SelectItem>
+                          <SelectItem value="Shoes">Shoes</SelectItem>
+                          <SelectItem value="Accessory">Accessory</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-condition">Condition *</Label>
+                      <Select 
+                        value={editItem.condition} 
+                        onValueChange={(value) => handleSelectChange('condition', value)}
+                        required
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select condition" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Excellent">Excellent</SelectItem>
+                          <SelectItem value="Good">Good</SelectItem>
+                          <SelectItem value="Fair">Fair</SelectItem>
+                          <SelectItem value="Poor">Poor</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-rental_price">Daily Rental Price ($) *</Label>
+                      <Input 
+                        id="edit-rental_price" 
+                        name="rental_price"
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        value={editItem.rental_price} 
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-image_url">Image URL</Label>
+                    <Input 
+                      id="edit-image_url" 
+                      name="image_url"
+                      value={editItem.image_url || ''} 
+                      onChange={handleInputChange}
+                      placeholder="https://example.com/image.jpg"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? 'Updating...' : 'Update Item'}
+                  </Button>
+                </DialogFooter>
+              </form>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* View Dialog */}
+        <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>{selectedItem?.name}</DialogTitle>
+            </DialogHeader>
+            {selectedItem && (
+              <div className="space-y-4 py-2">
+                <div className="flex justify-center">
+                  {selectedItem.image_url ? (
+                    <img 
+                      src={selectedItem.image_url} 
+                      alt={selectedItem.name}
+                      className="h-60 object-cover rounded-md" 
+                    />
+                  ) : (
+                    <div className="h-60 w-60 bg-gray-200 rounded-md flex items-center justify-center text-gray-400">
+                      No Image Available
+                    </div>
+                  )}
+                </div>
+                
+                {selectedItem.description && (
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-gray-500">Description:</p>
+                    <p className="text-sm">{selectedItem.description}</p>
+                  </div>
+                )}
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-gray-500">Size:</p>
+                    <p className="text-sm">{selectedItem.size}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-gray-500">Category:</p>
+                    <p className="text-sm">{selectedItem.category}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-gray-500">Condition:</p>
+                    <p className="text-sm">{selectedItem.condition}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-gray-500">Daily Rental Price:</p>
+                    <p className="text-sm">${selectedItem.rental_price.toFixed(2)}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-gray-500">Status:</p>
+                    <p className={`text-sm font-medium ${selectedItem.available ? 'text-green-600' : 'text-red-600'}`}>
+                      {selectedItem.available ? 'Available' : 'Rented'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button onClick={() => setIsViewDialogOpen(false)}>Close</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure you want to delete this item?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the item{' '}
+                <span className="font-bold">{selectedItem?.name}</span> from your inventory.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleDelete} 
+                className="bg-red-500 hover:bg-red-600"
+              >
+                {isSubmitting ? 'Deleting...' : 'Delete'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(6)].map((_, i) => (
@@ -317,12 +635,38 @@ const Inventory = () => {
                 </div>
               ) : (
                 items.map((item) => (
-                  <Card key={item.id}>
+                  <Card key={item.id} className="group relative">
                     <CardHeader>
-                      <CardTitle>{item.name}</CardTitle>
+                      <div className="flex justify-between items-start">
+                        <CardTitle className="pr-8">{item.name}</CardTitle>
+                        <div className="absolute top-4 right-4">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 text-gray-500">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleView(item)}>
+                                <Eye className="mr-2 h-4 w-4" /> View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleEdit(item)}>
+                                <Edit className="mr-2 h-4 w-4" /> Edit Item
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                onClick={() => handleDeleteConfirm(item)}
+                                className="text-red-600 focus:text-red-600"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" /> Delete Item
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="flex justify-center mb-4">
+                      <div className="flex justify-center mb-4 cursor-pointer" onClick={() => handleView(item)}>
                         {item.image_url ? (
                           <img 
                             src={item.image_url} 
@@ -360,9 +704,35 @@ const Inventory = () => {
                         </div>
                       </div>
                       {item.description && (
-                        <p className="mt-4 text-sm text-gray-600">{item.description}</p>
+                        <p className="mt-4 text-sm text-gray-600 line-clamp-2">{item.description}</p>
                       )}
                     </CardContent>
+                    <CardFooter className="hidden md:flex pt-2 justify-end gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleView(item)}
+                        className="w-10 h-8 p-0"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleEdit(item)}
+                        className="w-10 h-8 p-0"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleDeleteConfirm(item)}
+                        className="w-10 h-8 p-0 text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </CardFooter>
                   </Card>
                 ))
               )}
