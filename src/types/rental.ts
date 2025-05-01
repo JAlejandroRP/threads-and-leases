@@ -1,3 +1,4 @@
+
 export interface Rental {
   id: string;
   created_at: string;
@@ -29,4 +30,4 @@ export interface RentalItem {
     name: string;
     size: string;
   };
-} 
+}

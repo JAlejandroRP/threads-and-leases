@@ -1,3 +1,4 @@
+
 import { Rental } from '@/types/rental';
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/utils';
@@ -121,7 +122,7 @@ const RentalTable = ({ rentals, onStatusChange, onReturnItem, onDelete }: Rental
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex space-x-2">
+                    <div className="flex space-x-2 justify-end">
                       <Button
                         variant="outline"
                         size="sm"
@@ -158,4 +159,4 @@ const RentalTable = ({ rentals, onStatusChange, onReturnItem, onDelete }: Rental
   );
 };
 
-export default RentalTable; 
+export default RentalTable;

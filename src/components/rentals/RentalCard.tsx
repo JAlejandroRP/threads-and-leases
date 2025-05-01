@@ -1,6 +1,6 @@
+
 import { Rental } from '@/types/rental';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { formatDate } from '@/lib/utils';
 import { Trash2 } from 'lucide-react';
 
@@ -149,4 +149,4 @@ const RentalCard = ({ rental, onStatusChange, onReturnItem, onDelete }: RentalCa
   );
 };
 
-export default RentalCard; 
+export default RentalCard;

@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useRequireAuth } from '@/lib/auth';
 import DashboardLayout from '../components/layout/DashboardLayout';
@@ -14,11 +15,27 @@ import RentalTable from '@/components/rentals/RentalTable';
 import RentalCard from '@/components/rentals/RentalCard';
 import { Rental } from '@/types/rental';
 import { PostgrestError } from '@supabase/supabase-js';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { 
+  Pagination, 
+  PaginationContent, 
+  PaginationItem, 
+  PaginationLink, 
+  PaginationNext, 
+  PaginationPrevious 
+} from '@/components/ui/pagination';
+import { generatePagination } from '@/lib/utils';
+
+const ITEMS_PER_PAGE = 5;
 
 const Rentals = () => {
   useRequireAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
+  
   const [rentals, setRentals] = useState<Rental[]>([]);
+  const [totalRentals, setTotalRentals] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedRental, setSelectedRental] = useState<Rental | null>(null);
   const [isReturnDialogOpen, setIsReturnDialogOpen] = useState(false);
@@ -31,11 +48,24 @@ const Rentals = () => {
   
   useEffect(() => {
     fetchRentals();
-  }, []);
+  }, [currentPage]);
 
   const fetchRentals = async () => {
     try {
       setIsLoading(true);
+      
+      // Get total count for pagination
+      const { count, error: countError } = await supabase
+        .from('rentals')
+        .select('*', { count: 'exact', head: true });
+      
+      if (countError) throw countError;
+      setTotalRentals(count || 0);
+      
+      // Fetch paginated rentals
+      const from = (currentPage - 1) * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
+      
       const { data, error } = await supabase
         .from('rentals')
         .select(`
@@ -43,7 +73,8 @@ const Rentals = () => {
           customer:customer_id(name),
           clothing_item:clothing_item_id(name, size)
         `)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
       if (error) throw error;
 
@@ -217,13 +248,16 @@ const Rentals = () => {
     setIsDeleteDialogOpen(true);
   };
 
+  const totalPages = Math.ceil(totalRentals / ITEMS_PER_PAGE);
+  const pagination = generatePagination(currentPage, totalPages);
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <h1 className="text-2xl font-bold">Rentals</h1>
           <Button 
-            className="bg-purple-600 hover:bg-purple-700"
+            className="bg-purple-600 hover:bg-purple-700 w-full sm:w-auto"
             onClick={() => navigate('/rentals/new')}
           >
             Create New Rental
@@ -372,6 +406,42 @@ const Rentals = () => {
                 ))
               )}
             </div>
+
+            {/* Pagination */}
+            {totalRentals > ITEMS_PER_PAGE && (
+              <Pagination className="mt-8">
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
+                    />
+                  </PaginationItem>
+                  
+                  {pagination.map((page, i) => (
+                    <PaginationItem key={i}>
+                      {page === "..." ? (
+                        <div className="flex h-9 w-9 items-center justify-center text-gray-400">...</div>
+                      ) : (
+                        <PaginationLink
+                          isActive={currentPage === page}
+                          onClick={() => typeof page === 'number' && setCurrentPage(page)}
+                        >
+                          {page}
+                        </PaginationLink>
+                      )}
+                    </PaginationItem>
+                  ))}
+                  
+                  <PaginationItem>
+                    <PaginationNext 
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            )}
           </>
         )}
       </div>

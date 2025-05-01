@@ -89,6 +89,8 @@ const NewRental = () => {
     // When manual price changes, update total price
     if (isPriceEditing && manualPrice !== '') {
       setTotalPrice(parseFloat(manualPrice));
+    } else if (!isPriceEditing) {
+      updateTotalPrice(selectedMainItem, selectedRentalItems);
     }
   }, [manualPrice, isPriceEditing]);
 
@@ -351,15 +353,15 @@ const NewRental = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="space-y-6 pb-8">
+        <div className="flex items-center justify-between flex-wrap gap-4">
           <h1 className="text-2xl font-bold">Create New Rental</h1>
           <Button variant="outline" onClick={() => navigate('/rentals')}>
             Cancel
           </Button>
         </div>
 
-        <Card>
+        <Card className="mb-8">
           <CardHeader>
             <CardTitle>Rental Details</CardTitle>
           </CardHeader>
@@ -464,7 +466,7 @@ const NewRental = () => {
               {/* Special Order Types */}
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">Order Type</label>
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-4 flex-wrap gap-y-2">
                   <div className="flex items-center">
                     <Checkbox 
                       id="needs-adjustment" 
@@ -527,7 +529,7 @@ const NewRental = () => {
                             .filter(item => !isCustomSuit || item.category === 'Custom')
                             .map((item) => (
                               <SelectItem key={item.id} value={item.id}>
-                                {item.name} - {item.category} (Size {item.size}) - ${item.rental_price}/day
+                                {item.name} - {item.category} (Size {item.size}) - ${item.rental_price}
                               </SelectItem>
                             ))
                         )}
@@ -608,7 +610,7 @@ const NewRental = () => {
                             .filter(item => item.available && item.id !== selectedMainItem && item.category !== 'Custom')
                             .map(item => (
                               <SelectItem key={item.id} value={item.id}>
-                                {item.name} (${item.rental_price}/day)
+                                {item.name} (${item.rental_price})
                               </SelectItem>
                             ))
                           }
