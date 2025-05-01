@@ -9,6 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { UserPlus } from 'lucide-react';
+import { usePagination } from '@/hooks/use-pagination';
+import PaginationComponent from '@/components/common/PaginationComponent';
 
 interface Customer {
   id: string;
@@ -19,9 +21,12 @@ interface Customer {
   created_at: string;
 }
 
+const ITEMS_PER_PAGE = 10;
+
 const Customers = () => {
   useRequireAuth();
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [totalCustomers, setTotalCustomers] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newCustomer, setNewCustomer] = useState({
@@ -31,18 +36,43 @@ const Customers = () => {
     address: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const { 
+    currentPage, 
+    pageItems, 
+    totalPages, 
+    from, 
+    to,
+    goToNextPage, 
+    goToPreviousPage, 
+    goToPage 
+  } = usePagination({ 
+    totalItems: totalCustomers, 
+    itemsPerPage: ITEMS_PER_PAGE 
+  });
 
   useEffect(() => {
     fetchCustomers();
-  }, []);
+  }, [currentPage]);
 
   const fetchCustomers = async () => {
     try {
       setIsLoading(true);
+      
+      // Get total count for pagination
+      const { count, error: countError } = await supabase
+        .from('customers')
+        .select('*', { count: 'exact', head: true });
+      
+      if (countError) throw countError;
+      setTotalCustomers(count || 0);
+
+      // Fetch paginated customers
       const { data, error } = await supabase
         .from('customers')
         .select('*')
-        .order('name');
+        .order('name')
+        .range(from, to);
 
       if (error) throw error;
       setCustomers(data || []);
@@ -200,61 +230,73 @@ const Customers = () => {
             </div>
           </div>
         ) : (
-          <div className="bg-white shadow overflow-hidden rounded-lg">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Name
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Contact Information
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Address
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Joined
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {customers.length === 0 ? (
+          <>
+            <div className="bg-white shadow overflow-hidden rounded-lg">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
                     <tr>
-                      <td colSpan={5} className="px-6 py-4 whitespace-nowrap text-center text-gray-500">
-                        No customers found.
-                      </td>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Name
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Contact Information
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Address
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Joined
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
                     </tr>
-                  ) : (
-                    customers.map((customer) => (
-                      <tr key={customer.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{customer.name}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{customer.email}</div>
-                          <div className="text-sm text-gray-500">{customer.phone}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-500">{customer.address || 'Not provided'}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {formatDate(customer.created_at)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <Button variant="outline" size="sm">View</Button>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {customers.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-4 whitespace-nowrap text-center text-gray-500">
+                          No customers found.
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                    ) : (
+                      customers.map((customer) => (
+                        <tr key={customer.id}>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900">{customer.name}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">{customer.email}</div>
+                            <div className="text-sm text-gray-500">{customer.phone}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-500">{customer.address || 'Not provided'}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {formatDate(customer.created_at)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <Button variant="outline" size="sm">View</Button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
+            
+            {/* Pagination Component */}
+            <PaginationComponent
+              currentPage={currentPage}
+              pageItems={pageItems}
+              totalPages={totalPages}
+              onPageChange={goToPage}
+              onPrevious={goToPreviousPage}
+              onNext={goToNextPage}
+            />
+          </>
         )}
       </div>
     </DashboardLayout>

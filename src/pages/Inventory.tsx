@@ -12,6 +12,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { PackagePlus } from 'lucide-react';
+import { usePagination } from '@/hooks/use-pagination';
+import PaginationComponent from '@/components/common/PaginationComponent';
 
 interface ClothingItem {
   id: string;
@@ -25,9 +27,12 @@ interface ClothingItem {
   image_url: string | null;
 }
 
+const ITEMS_PER_PAGE = 9;
+
 const Inventory = () => {
   useRequireAuth();
   const [items, setItems] = useState<ClothingItem[]>([]);
+  const [totalItems, setTotalItems] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -41,17 +46,42 @@ const Inventory = () => {
     image_url: ''
   });
 
+  const { 
+    currentPage, 
+    pageItems, 
+    totalPages, 
+    from, 
+    to,
+    goToNextPage, 
+    goToPreviousPage, 
+    goToPage 
+  } = usePagination({ 
+    totalItems, 
+    itemsPerPage: ITEMS_PER_PAGE 
+  });
+
   useEffect(() => {
     fetchInventory();
-  }, []);
+  }, [currentPage]);
 
   const fetchInventory = async () => {
     try {
       setIsLoading(true);
+      
+      // Get total count for pagination
+      const { count, error: countError } = await supabase
+        .from('clothing_items')
+        .select('*', { count: 'exact', head: true });
+      
+      if (countError) throw countError;
+      setTotalItems(count || 0);
+
+      // Fetch paginated items
       const { data, error } = await supabase
         .from('clothing_items')
         .select('*')
-        .order('name');
+        .order('name')
+        .range(from, to);
 
       if (error) throw error;
       setItems(data || []);
@@ -278,64 +308,76 @@ const Inventory = () => {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {items.length === 0 ? (
-              <div className="col-span-full text-center py-12 bg-white rounded-lg shadow">
-                <p className="text-gray-500">No inventory items found.</p>
-                <p className="mt-2">Add your first item to get started.</p>
-              </div>
-            ) : (
-              items.map((item) => (
-                <Card key={item.id}>
-                  <CardHeader>
-                    <CardTitle>{item.name}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex justify-center mb-4">
-                      {item.image_url ? (
-                        <img 
-                          src={item.image_url} 
-                          alt={item.name} 
-                          className="h-40 object-cover rounded-md"
-                        />
-                      ) : (
-                        <div className="h-40 w-40 bg-gray-200 rounded-md flex items-center justify-center text-gray-400">
-                          No Image
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {items.length === 0 ? (
+                <div className="col-span-full text-center py-12 bg-white rounded-lg shadow">
+                  <p className="text-gray-500">No inventory items found.</p>
+                  <p className="mt-2">Add your first item to get started.</p>
+                </div>
+              ) : (
+                items.map((item) => (
+                  <Card key={item.id}>
+                    <CardHeader>
+                      <CardTitle>{item.name}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex justify-center mb-4">
+                        {item.image_url ? (
+                          <img 
+                            src={item.image_url} 
+                            alt={item.name} 
+                            className="h-40 object-cover rounded-md"
+                          />
+                        ) : (
+                          <div className="h-40 w-40 bg-gray-200 rounded-md flex items-center justify-center text-gray-400">
+                            No Image
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-500">Category:</span>
+                          <span className="text-sm font-medium">{item.category}</span>
                         </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-500">Size:</span>
+                          <span className="text-sm font-medium">{item.size}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-500">Condition:</span>
+                          <span className="text-sm font-medium">{item.condition}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-500">Price:</span>
+                          <span className="text-sm font-medium">${item.rental_price.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-500">Status:</span>
+                          <span className={`text-sm font-medium ${item.available ? 'text-green-600' : 'text-red-600'}`}>
+                            {item.available ? 'Available' : 'Rented'}
+                          </span>
+                        </div>
+                      </div>
+                      {item.description && (
+                        <p className="mt-4 text-sm text-gray-600">{item.description}</p>
                       )}
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-500">Category:</span>
-                        <span className="text-sm font-medium">{item.category}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-500">Size:</span>
-                        <span className="text-sm font-medium">{item.size}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-500">Condition:</span>
-                        <span className="text-sm font-medium">{item.condition}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-500">Price/Day:</span>
-                        <span className="text-sm font-medium">${item.rental_price.toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-500">Status:</span>
-                        <span className={`text-sm font-medium ${item.available ? 'text-green-600' : 'text-red-600'}`}>
-                          {item.available ? 'Available' : 'Rented'}
-                        </span>
-                      </div>
-                    </div>
-                    {item.description && (
-                      <p className="mt-4 text-sm text-gray-600">{item.description}</p>
-                    )}
-                  </CardContent>
-                </Card>
-              ))
-            )}
-          </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+
+            {/* Pagination Component */}
+            <PaginationComponent
+              currentPage={currentPage}
+              pageItems={pageItems}
+              totalPages={totalPages}
+              onPageChange={goToPage}
+              onPrevious={goToPreviousPage}
+              onNext={goToNextPage}
+            />
+          </>
         )}
       </div>
     </DashboardLayout>
