@@ -1,4 +1,3 @@
-
 import { Rental } from '@/types/rental';
 import { Button } from '@/components/ui/button';
 import { formatDate, getStatusBadgeColor, getStatusDisplayName } from '@/lib/utils';
@@ -27,6 +26,7 @@ const RentalCard = ({
   onDelete,
   onViewDetails 
 }: RentalCardProps) => {
+  // Now we're importing these from utils.ts
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
       case 'active':

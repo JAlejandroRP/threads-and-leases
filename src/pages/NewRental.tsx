@@ -135,26 +135,23 @@ const NewRental = () => {
   };
 
   const handleDateChange = () => {
-    updateTotalPrice(selectedMainItem, selectedRentalItems);
+    // Keep the date change handler but don't recalculate price based on dates
+    // We still want to track the dates for rental period purposes
   };
 
   const updateTotalPrice = (mainItemId: string, additionalItems: RentalItem[]) => {
-    if (!startDate || !endDate || isPriceEditing) return;
+    if (isPriceEditing) return;
 
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const days = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
-    
-    // Calculate price for main item
+    // Calculate price for main item - no longer using days in calculation
     let mainPrice = 0;
     if (mainItemId) {
       const mainItem = clothingItems.find(item => item.id === mainItemId);
       if (mainItem) {
-        mainPrice = mainItem.rental_price * days;
+        mainPrice = mainItem.rental_price;
       }
     }
     
-    // Add prices of additional items
+    // Add prices of additional items - flat price, not day-based
     const additionalPrice = additionalItems.reduce((sum, item) => sum + item.price, 0);
     
     // Apply discount if any
