@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useRequireAuth } from '@/lib/auth';
 import DashboardLayout from '../components/layout/DashboardLayout';
@@ -31,6 +30,7 @@ const Dashboard = () => {
     rentalsThisMonth: 0,
   });
   const [recentActivity, setRecentActivity] = useState<RecentRental[]>([]);
+  const [recentRentals, setRecentRentals] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -113,7 +113,35 @@ const Dashboard = () => {
       }
     };
 
+    const fetchRecentRentals = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('rentals')
+          .select(`
+            *,
+            customer:customer_id(name),
+            clothing_item:clothing_item_id(name, size)
+          `)
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        if (error) throw error;
+        
+        setRecentRentals(data.map(rental => ({
+          id: rental.id,
+          customerName: rental.customer ? rental.customer.name : 'Unknown',
+          itemName: rental.clothing_item ? rental.clothing_item.name : 'Unknown',
+          date: rental.created_at,
+          status: rental.status,
+          price: rental.total_price
+        })));
+      } catch (error) {
+        console.error('Error fetching recent rentals:', error);
+      }
+    };
+
     fetchDashboardData();
+    fetchRecentRentals();
   }, []);
 
   const getStatusColor = (status: string): string => {

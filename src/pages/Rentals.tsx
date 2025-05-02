@@ -25,6 +25,7 @@ import {
   PaginationPrevious 
 } from '@/components/ui/pagination';
 import { generatePagination } from '@/lib/utils';
+import { ItemDetailsDialog } from '@/components/inventory/ItemDetailsDialog';
 
 const ITEMS_PER_PAGE = 5;
 
@@ -41,6 +42,7 @@ const Rentals = () => {
   const [isReturnDialogOpen, setIsReturnDialogOpen] = useState(false);
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [returnCondition, setReturnCondition] = useState<string>('good');
   const [returnNotes, setReturnNotes] = useState<string>('');
   const [additionalFees, setAdditionalFees] = useState<string>('0');
@@ -247,6 +249,11 @@ const Rentals = () => {
     setSelectedRental(rental);
     setIsDeleteDialogOpen(true);
   };
+  
+  const viewDetails = (rental: Rental) => {
+    setSelectedRental(rental);
+    setIsDetailsDialogOpen(true);
+  };
 
   const totalPages = Math.ceil(totalRentals / ITEMS_PER_PAGE);
   const pagination = generatePagination(currentPage, totalPages);
@@ -362,6 +369,67 @@ const Rentals = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        
+        {/* Details Dialog */}
+        {selectedRental && (
+          <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Rental Details</DialogTitle>
+              </DialogHeader>
+              <div className="py-4 space-y-4">
+                <div className="space-y-2">
+                  <h3 className="font-medium text-lg">Customer Information</h3>
+                  <p><span className="font-medium">Name:</span> {selectedRental.customer?.name || 'Unknown'}</p>
+                </div>
+                
+                <div className="space-y-2">
+                  <h3 className="font-medium text-lg">Main Item</h3>
+                  <p><span className="font-medium">Name:</span> {selectedRental.clothing_item?.name || 'Unknown'}</p>
+                  <p><span className="font-medium">Size:</span> {selectedRental.clothing_item?.size || 'N/A'}</p>
+                </div>
+                
+                {selectedRental.rental_items && selectedRental.rental_items.length > 0 && (
+                  <div className="space-y-2">
+                    <h3 className="font-medium text-lg">Additional Items</h3>
+                    <ul className="list-disc pl-5">
+                      {selectedRental.rental_items.map(item => (
+                        <li key={item.id}>
+                          {item.clothing_item?.name} (Size: {item.clothing_item?.size})
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                
+                <div className="space-y-2">
+                  <h3 className="font-medium text-lg">Rental Information</h3>
+                  <p><span className="font-medium">Period:</span> {formatDate(selectedRental.start_date)} - {formatDate(selectedRental.end_date)}</p>
+                  <p>
+                    <span className="font-medium">Status:</span> 
+                    <span className={`ml-2 px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                      ${getStatusBadgeColor(selectedRental.status)}`}>
+                      {getStatusDisplayName(selectedRental.status)}
+                    </span>
+                  </p>
+                  <p><span className="font-medium">Total Price:</span> ${selectedRental.total_price.toFixed(2)}</p>
+                  {selectedRental.additional_fees && selectedRental.additional_fees > 0 && (
+                    <p><span className="font-medium">Additional Fees:</span> ${selectedRental.additional_fees.toFixed(2)}</p>
+                  )}
+                  {selectedRental.return_condition && (
+                    <p><span className="font-medium">Return Condition:</span> {selectedRental.return_condition}</p>
+                  )}
+                  {selectedRental.return_notes && (
+                    <p><span className="font-medium">Return Notes:</span> {selectedRental.return_notes}</p>
+                  )}
+                </div>
+              </div>
+              <DialogFooter>
+                <Button onClick={() => setIsDetailsDialogOpen(false)}>Close</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
 
         {isLoading ? (
           <div className="bg-white shadow overflow-hidden rounded-lg">
@@ -385,6 +453,7 @@ const Rentals = () => {
                 onStatusChange={openStatusDialog}
                 onReturnItem={openReturnDialog}
                 onDelete={openDeleteDialog}
+                onViewDetails={viewDetails}
               />
             </div>
 
@@ -402,6 +471,7 @@ const Rentals = () => {
                     onStatusChange={openStatusDialog}
                     onReturnItem={openReturnDialog}
                     onDelete={openDeleteDialog}
+                    onViewDetails={viewDetails}
                   />
                 ))
               )}

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -150,7 +151,7 @@ export const InventoryItemForm = ({
         </div>
         
         <div className="space-y-2">
-          <Label htmlFor="rental_price">Daily Rental Price ($) *</Label>
+          <Label htmlFor="rental_price">Fixed Rental Price ($) *</Label>
           <Input 
             id="rental_price" 
             name="rental_price"

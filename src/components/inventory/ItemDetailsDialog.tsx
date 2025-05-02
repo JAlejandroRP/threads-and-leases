@@ -1,3 +1,4 @@
+
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { ClothingItem } from '@/hooks/use-inventory';
@@ -57,7 +58,7 @@ export const ItemDetailsDialog = ({
               <p className="text-sm">{item.condition}</p>
             </div>
             <div className="space-y-1">
-              <p className="text-sm font-medium text-gray-500">Daily Rental Price:</p>
+              <p className="text-sm font-medium text-gray-500">Fixed Rental Price:</p>
               <p className="text-sm">${item.rental_price.toFixed(2)}</p>
             </div>
             <div className="space-y-1">

@@ -2,16 +2,31 @@
 import { Rental } from '@/types/rental';
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/utils';
-import { Trash2 } from 'lucide-react';
+import { Eye, Trash2, MoreVertical } from 'lucide-react';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
 
 interface RentalTableProps {
   rentals: Rental[];
   onStatusChange: (rental: Rental) => void;
   onReturnItem: (rental: Rental) => void;
   onDelete: (rental: Rental) => void;
+  onViewDetails: (rental: Rental) => void;
 }
 
-const RentalTable = ({ rentals, onStatusChange, onReturnItem, onDelete }: RentalTableProps) => {
+const RentalTable = ({ 
+  rentals, 
+  onStatusChange, 
+  onReturnItem, 
+  onDelete,
+  onViewDetails 
+}: RentalTableProps) => {
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
       case 'active':
@@ -122,32 +137,37 @@ const RentalTable = ({ rentals, onStatusChange, onReturnItem, onDelete }: Rental
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex space-x-2 justify-end">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onStatusChange(rental)}
-                      >
-                        Change Status
-                      </Button>
-                      {rental.status === 'active' && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => onReturnItem(rental)}
-                        >
-                          Return Item
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreVertical className="h-4 w-4" />
                         </Button>
-                      )}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onDelete(rental)}
-                        className="hover:bg-red-100 bg-red-50"
-                      >
-                        <Trash2 className="h-4 w-4 text-red-600" />
-                      </Button>
-                    </div>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="bg-white shadow-lg rounded-md">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => onViewDetails(rental)} className="cursor-pointer">
+                          <Eye className="mr-2 h-4 w-4" />
+                          <span>View Details</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onStatusChange(rental)} className="cursor-pointer">
+                          <span>Change Status</span>
+                        </DropdownMenuItem>
+                        {rental.status === 'active' && (
+                          <DropdownMenuItem onClick={() => onReturnItem(rental)} className="cursor-pointer">
+                            <span>Return Item</span>
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          onClick={() => onDelete(rental)} 
+                          className="text-red-600 cursor-pointer"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          <span>Delete</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </td>
                 </tr>
               ))

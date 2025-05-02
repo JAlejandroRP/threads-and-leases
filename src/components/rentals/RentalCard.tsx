@@ -2,16 +2,31 @@
 import { Rental } from '@/types/rental';
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/utils';
-import { Trash2 } from 'lucide-react';
+import { Eye, Trash2, MoreVertical } from 'lucide-react';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
 
 interface RentalCardProps {
   rental: Rental;
   onStatusChange: (rental: Rental) => void;
   onReturnItem: (rental: Rental) => void;
   onDelete: (rental: Rental) => void;
+  onViewDetails: (rental: Rental) => void;
 }
 
-const RentalCard = ({ rental, onStatusChange, onReturnItem, onDelete }: RentalCardProps) => {
+const RentalCard = ({ 
+  rental, 
+  onStatusChange, 
+  onReturnItem, 
+  onDelete,
+  onViewDetails 
+}: RentalCardProps) => {
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
       case 'active':
@@ -48,15 +63,38 @@ const RentalCard = ({ rental, onStatusChange, onReturnItem, onDelete }: RentalCa
         <div>
           <h3 className="text-lg font-medium text-gray-900">{rental.customer?.name || 'Unknown'}</h3>
         </div>
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8 hover:bg-red-100 bg-red-50"
-            onClick={() => onDelete(rental)}
-          >
-            <Trash2 className="h-4 w-4 text-red-600" />
-          </Button>
+        <div className="flex items-center">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-white shadow-lg rounded-md">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => onViewDetails(rental)} className="cursor-pointer">
+                <Eye className="mr-2 h-4 w-4" />
+                <span>View Details</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onStatusChange(rental)} className="cursor-pointer">
+                <span>Change Status</span>
+              </DropdownMenuItem>
+              {rental.status === 'active' && (
+                <DropdownMenuItem onClick={() => onReturnItem(rental)} className="cursor-pointer">
+                  <span>Return Item</span>
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={() => onDelete(rental)} 
+                className="text-red-600 cursor-pointer"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                <span>Delete</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -122,27 +160,6 @@ const RentalCard = ({ rental, onStatusChange, onReturnItem, onDelete }: RentalCa
             <div className="text-sm font-medium text-gray-500">Return Condition</div>
             <div className="text-sm text-gray-900">{rental.return_condition}</div>
           </div>
-        )}
-      </div>
-
-      <div className="flex space-x-2">
-        <Button
-          variant="outline"
-          size="sm"
-          className="flex-1"
-          onClick={() => onStatusChange(rental)}
-        >
-          Change Status
-        </Button>
-        {rental.status === 'active' && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex-1"
-            onClick={() => onReturnItem(rental)}
-          >
-            Return Item
-          </Button>
         )}
       </div>
     </div>
