@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 const LoginForm = () => {
   const [email, setEmail] = useState('');
@@ -13,6 +14,7 @@ const LoginForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { signIn } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,15 +39,15 @@ const LoginForm = () => {
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
-        <CardTitle className="text-2xl">Log in to your account</CardTitle>
+        <CardTitle className="text-2xl">{t('auth.login')}</CardTitle>
         <CardDescription>
-          Enter your email and password to log in
+          {t('auth.enterEmailAndPassword')}
         </CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-medium">Email</label>
+            <label htmlFor="email" className="text-sm font-medium">{t('auth.email')}</label>
             <Input
               id="email"
               type="email"
@@ -56,7 +58,7 @@ const LoginForm = () => {
             />
           </div>
           <div className="space-y-2">
-            <label htmlFor="password" className="text-sm font-medium">Password</label>
+            <label htmlFor="password" className="text-sm font-medium">{t('auth.password')}</label>
             <Input
               id="password"
               type="password"
@@ -69,7 +71,7 @@ const LoginForm = () => {
                 href="/forgot-password" 
                 className="text-sm text-purple-600 hover:underline"
               >
-                Forgot your password?
+                {t('auth.forgot')}
               </a>
             </div>
           </div>
@@ -80,12 +82,12 @@ const LoginForm = () => {
             className="w-full bg-purple-600 hover:bg-purple-700" 
             disabled={isLoading}
           >
-            {isLoading ? 'Logging in...' : 'Log in'}
+            {isLoading ? t('common.loading') : t('auth.login')}
           </Button>
           <div className="mt-4 text-center text-sm">
-            Don't have an account?{' '}
+            {t('auth.dontHaveAccount')}{' '}
             <a href="/signup" className="text-purple-600 hover:underline">
-              Sign up
+              {t('auth.signup')}
             </a>
           </div>
         </CardFooter>

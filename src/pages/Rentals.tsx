@@ -24,7 +24,7 @@ import {
   PaginationPrevious 
 } from '@/components/ui/pagination';
 import { formatDate, generatePagination } from '@/lib/utils';
-import { ItemDetailsDialog } from '@/components/inventory/ItemDetailsDialog';
+import { useTranslation } from 'react-i18next';
 
 const ITEMS_PER_PAGE = 5;
 
@@ -32,6 +32,7 @@ const Rentals = () => {
   useRequireAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { t } = useTranslation();
   
   const [rentals, setRentals] = useState<Rental[]>([]);
   const [totalRentals, setTotalRentals] = useState(0);
@@ -291,12 +292,12 @@ const Rentals = () => {
     <DashboardLayout>
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-          <h1 className="text-2xl font-bold">Rentals</h1>
+          <h1 className="text-2xl font-bold">{t('rentals.title')}</h1>
           <Button 
             className="bg-purple-600 hover:bg-purple-700 w-full sm:w-auto"
             onClick={() => navigate('/rentals/new')}
           >
-            Create New Rental
+            {t('rentals.createNew')}
           </Button>
         </div>
 
@@ -304,35 +305,35 @@ const Rentals = () => {
         <Dialog open={isReturnDialogOpen} onOpenChange={setIsReturnDialogOpen}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Return Item</DialogTitle>
+              <DialogTitle>{t('rentals.returnItem')}</DialogTitle>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="return-condition">Condition upon return</Label>
+                <Label htmlFor="return-condition">{t('rentals.conditionUponReturn')}</Label>
                 <Select value={returnCondition} onValueChange={setReturnCondition}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select condition" />
+                    <SelectValue placeholder={t('rentals.selectCondition')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="excellent">Excellent</SelectItem>
-                    <SelectItem value="good">Good</SelectItem>
-                    <SelectItem value="fair">Fair</SelectItem>
-                    <SelectItem value="damaged">Damaged</SelectItem>
-                    <SelectItem value="severely_damaged">Severely Damaged</SelectItem>
+                    <SelectItem value="excellent">{t('conditions.excellent')}</SelectItem>
+                    <SelectItem value="good">{t('conditions.good')}</SelectItem>
+                    <SelectItem value="fair">{t('conditions.fair')}</SelectItem>
+                    <SelectItem value="damaged">{t('conditions.damaged')}</SelectItem>
+                    <SelectItem value="severely_damaged">{t('conditions.severely_damaged')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="return-notes">Notes</Label>
+                <Label htmlFor="return-notes">{t('rentals.returnNotes')}</Label>
                 <Textarea
                   id="return-notes"
                   value={returnNotes}
                   onChange={(e) => setReturnNotes(e.target.value)}
-                  placeholder="Add any notes about the returned item"
+                  placeholder={t('rentals.addNotes')}
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="additional-fees">Additional Fees ($)</Label>
+                <Label htmlFor="additional-fees">{t('rentals.additionalFees')}</Label>
                 <Input
                   id="additional-fees"
                   type="number"
@@ -344,8 +345,8 @@ const Rentals = () => {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsReturnDialogOpen(false)}>Cancel</Button>
-              <Button onClick={handleReturnItem}>Complete Return</Button>
+              <Button variant="outline" onClick={() => setIsReturnDialogOpen(false)}>{t('common.cancel')}</Button>
+              <Button onClick={handleReturnItem}>{t('rentals.completeReturn')}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -354,29 +355,29 @@ const Rentals = () => {
         <Dialog open={isStatusDialogOpen} onOpenChange={setIsStatusDialogOpen}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Update Rental Status</DialogTitle>
+              <DialogTitle>{t('rentals.updateStatus')}</DialogTitle>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="status">New Status</Label>
+                <Label htmlFor="status">{t('rentals.newStatus')}</Label>
                 <Select value={newStatus} onValueChange={setNewStatus}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
+                    <SelectValue placeholder={t('rentals.selectStatus')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                    <SelectItem value="pending_adjustment">Pending Adjustment</SelectItem>
-                    <SelectItem value="pending_creation">Being Created</SelectItem>
-                    <SelectItem value="ready">Ready</SelectItem>
+                    <SelectItem value="active">{t('statuses.active')}</SelectItem>
+                    <SelectItem value="completed">{t('statuses.completed')}</SelectItem>
+                    <SelectItem value="cancelled">{t('statuses.cancelled')}</SelectItem>
+                    <SelectItem value="pending_adjustment">{t('statuses.pending_adjustment')}</SelectItem>
+                    <SelectItem value="pending_creation">{t('statuses.pending_creation')}</SelectItem>
+                    <SelectItem value="ready">{t('statuses.ready')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsStatusDialogOpen(false)}>Cancel</Button>
-              <Button onClick={handleStatusUpdate}>Update Status</Button>
+              <Button variant="outline" onClick={() => setIsStatusDialogOpen(false)}>{t('common.cancel')}</Button>
+              <Button onClick={handleStatusUpdate}>{t('common.save')}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -385,16 +386,16 @@ const Rentals = () => {
         <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Delete Rental</DialogTitle>
+              <DialogTitle>{t('rentals.delete')}</DialogTitle>
             </DialogHeader>
             <div className="py-4">
               <p className="text-sm text-gray-500">
-                Are you sure you want to delete this rental? This action cannot be undone.
+                {t('rentals.deleteConfirm')}
               </p>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>Cancel</Button>
-              <Button variant="destructive" onClick={handleDelete}>Delete</Button>
+              <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>{t('common.cancel')}</Button>
+              <Button variant="destructive" onClick={handleDelete}>{t('common.delete')}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -404,27 +405,27 @@ const Rentals = () => {
           <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
             <DialogContent className="sm:max-w-[500px]">
               <DialogHeader>
-                <DialogTitle>Rental Details</DialogTitle>
+                <DialogTitle>{t('rentals.title')} {t('common.details')}</DialogTitle>
               </DialogHeader>
               <div className="py-4 space-y-4">
                 <div className="space-y-2">
-                  <h3 className="font-medium text-lg">Customer Information</h3>
-                  <p><span className="font-medium">Name:</span> {selectedRental.customer?.name || 'Unknown'}</p>
+                  <h3 className="font-medium text-lg">{t('rentals.customerInfo')}</h3>
+                  <p><span className="font-medium">{t('rentals.name')}:</span> {selectedRental.customer?.name || t('rentals.unknown')}</p>
                 </div>
                 
                 <div className="space-y-2">
-                  <h3 className="font-medium text-lg">Main Item</h3>
-                  <p><span className="font-medium">Name:</span> {selectedRental.clothing_item?.name || 'Unknown'}</p>
-                  <p><span className="font-medium">Size:</span> {selectedRental.clothing_item?.size || 'N/A'}</p>
+                  <h3 className="font-medium text-lg">{t('rentals.mainItem')}</h3>
+                  <p><span className="font-medium">{t('rentals.name')}:</span> {selectedRental.clothing_item?.name || t('rentals.unknown')}</p>
+                  <p><span className="font-medium">{t('rentals.size')}:</span> {selectedRental.clothing_item?.size || 'N/A'}</p>
                 </div>
                 
                 {selectedRental.rental_items && selectedRental.rental_items.length > 0 && (
                   <div className="space-y-2">
-                    <h3 className="font-medium text-lg">Additional Items</h3>
+                    <h3 className="font-medium text-lg">{t('rentals.additionalItems')}</h3>
                     <ul className="list-disc pl-5">
                       {selectedRental.rental_items.map(item => (
                         <li key={item.id}>
-                          {item.clothing_item?.name} (Size: {item.clothing_item?.size})
+                          {item.clothing_item?.name} ({t('rentals.size')}: {item.clothing_item?.size})
                         </li>
                       ))}
                     </ul>
@@ -432,29 +433,29 @@ const Rentals = () => {
                 )}
                 
                 <div className="space-y-2">
-                  <h3 className="font-medium text-lg">Rental Information</h3>
-                  <p><span className="font-medium">Period:</span> {formatDate(selectedRental.start_date)} - {formatDate(selectedRental.end_date)}</p>
+                  <h3 className="font-medium text-lg">{t('rentals.rentalInfo')}</h3>
+                  <p><span className="font-medium">{t('rentals.period')}:</span> {formatDate(selectedRental.start_date)} - {formatDate(selectedRental.end_date)}</p>
                   <p>
-                    <span className="font-medium">Status:</span> 
+                    <span className="font-medium">{t('common.status')}:</span> 
                     <span className={`ml-2 px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
                       ${getStatusBadgeColor(selectedRental.status)}`}>
-                      {getStatusDisplayName(selectedRental.status)}
+                      {t(`statuses.${selectedRental.status}`)}
                     </span>
                   </p>
-                  <p><span className="font-medium">Total Price:</span> ${selectedRental.total_price.toFixed(2)}</p>
+                  <p><span className="font-medium">{t('rentals.totalPrice')}:</span> ${selectedRental.total_price.toFixed(2)}</p>
                   {selectedRental.additional_fees && selectedRental.additional_fees > 0 && (
-                    <p><span className="font-medium">Additional Fees:</span> ${selectedRental.additional_fees.toFixed(2)}</p>
+                    <p><span className="font-medium">{t('rentals.additionalFees')}:</span> ${selectedRental.additional_fees.toFixed(2)}</p>
                   )}
                   {selectedRental.return_condition && (
-                    <p><span className="font-medium">Return Condition:</span> {selectedRental.return_condition}</p>
+                    <p><span className="font-medium">{t('rentals.returnCondition')}:</span> {t(`conditions.${selectedRental.return_condition}`)}</p>
                   )}
                   {selectedRental.return_notes && (
-                    <p><span className="font-medium">Return Notes:</span> {selectedRental.return_notes}</p>
+                    <p><span className="font-medium">{t('rentals.returnNotes')}:</span> {selectedRental.return_notes}</p>
                   )}
                 </div>
               </div>
               <DialogFooter>
-                <Button onClick={() => setIsDetailsDialogOpen(false)}>Close</Button>
+                <Button onClick={() => setIsDetailsDialogOpen(false)}>{t('common.cancel')}</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>

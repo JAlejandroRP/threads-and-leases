@@ -1,6 +1,7 @@
+
 import { Rental } from '@/types/rental';
 import { Button } from '@/components/ui/button';
-import { formatDate, getStatusBadgeColor, getStatusDisplayName } from '@/lib/utils';
+import { formatDate, getStatusBadgeColor } from '@/lib/utils';
 import { Eye, Trash2, MoreVertical } from 'lucide-react';
 import { 
   DropdownMenu,
@@ -10,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
+import { useTranslation } from 'react-i18next';
 
 interface RentalTableProps {
   rentals: Rental[];
@@ -26,35 +28,7 @@ const RentalTable = ({
   onDelete,
   onViewDetails 
 }: RentalTableProps) => {
-  const getStatusBadgeColor = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800';
-      case 'completed':
-        return 'bg-blue-100 text-blue-800';
-      case 'cancelled':
-        return 'bg-gray-100 text-gray-800';
-      case 'pending_adjustment':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'pending_creation':
-        return 'bg-purple-100 text-purple-800';
-      case 'ready':
-        return 'bg-teal-100 text-teal-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getStatusDisplayName = (status: string) => {
-    switch (status) {
-      case 'pending_adjustment':
-        return 'Pending Adjustment';
-      case 'pending_creation':
-        return 'Being Created';
-      default:
-        return status.charAt(0).toUpperCase() + status.slice(1);
-    }
-  };
+  const { t } = useTranslation();
 
   return (
     <div className="bg-white shadow overflow-hidden rounded-lg">
@@ -63,22 +37,22 @@ const RentalTable = ({
           <thead className="bg-gray-50">
             <tr>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Customer
+                {t('rentals.customer')}
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Item(s)
+                {t('rentals.items')}
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Dates
+                {t('rentals.dates')}
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
+                {t('common.status')}
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Price
+                {t('common.price')}
               </th>
               <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
+                {t('common.actions')}
               </th>
             </tr>
           </thead>
@@ -86,27 +60,27 @@ const RentalTable = ({
             {rentals.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-6 py-4 whitespace-nowrap text-center text-gray-500">
-                  No rentals found. Create your first rental!
+                  {t('common.noResults')}
                 </td>
               </tr>
             ) : (
               rentals.map((rental) => (
                 <tr key={rental.id}>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{rental.customer?.name || 'Unknown'}</div>
+                    <div className="text-sm font-medium text-gray-900">{rental.customer?.name || t('rentals.unknown')}</div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-sm text-gray-900">{rental.clothing_item?.name || 'Unknown'}</div>
-                    <div className="text-xs text-gray-500">Size: {rental.clothing_item?.size || 'N/A'}</div>
+                    <div className="text-sm text-gray-900">{rental.clothing_item?.name || t('rentals.unknown')}</div>
+                    <div className="text-xs text-gray-500">{t('rentals.size')}: {rental.clothing_item?.size || 'N/A'}</div>
 
                     {/* Additional rental items */}
                     {rental.rental_items && rental.rental_items.length > 0 && (
                       <div className="mt-2">
-                        <p className="text-xs text-gray-500 font-medium">Additional items:</p>
+                        <p className="text-xs text-gray-500 font-medium">{t('rentals.additionalItems')}:</p>
                         <ul className="text-xs text-gray-500 list-disc pl-4">
                           {rental.rental_items.map(item => (
                             <li key={item.id}>
-                              {item.clothing_item?.name} (Size: {item.clothing_item?.size})
+                              {item.clothing_item?.name} ({t('rentals.size')}: {item.clothing_item?.size})
                             </li>
                           ))}
                         </ul>
@@ -119,11 +93,11 @@ const RentalTable = ({
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
                       ${getStatusBadgeColor(rental.status)}`}>
-                      {getStatusDisplayName(rental.status)}
+                      {t(`statuses.${rental.status}`)}
                     </span>
                     {rental.return_condition && (
                       <div className="mt-1 text-xs text-gray-500">
-                        Returned: {rental.return_condition}
+                        {t('rentals.returnCondition')}: {t(`conditions.${rental.return_condition}`)}
                       </div>
                     )}
                   </td>
@@ -131,7 +105,7 @@ const RentalTable = ({
                     <div className="text-sm text-gray-900">${rental.total_price.toFixed(2)}</div>
                     {rental.additional_fees && rental.additional_fees > 0 && (
                       <div className="text-xs text-gray-500">
-                        + ${rental.additional_fees.toFixed(2)} fees
+                        + ${rental.additional_fees.toFixed(2)} {t('rentals.fees')}
                       </div>
                     )}
                   </td>
@@ -143,18 +117,18 @@ const RentalTable = ({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="bg-white shadow-lg rounded-md">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuLabel>{t('common.actions')}</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => onViewDetails(rental)} className="cursor-pointer">
                           <Eye className="mr-2 h-4 w-4" />
-                          <span>View Details</span>
+                          <span>{t('common.view')} {t('common.details')}</span>
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => onStatusChange(rental)} className="cursor-pointer">
-                          <span>Change Status</span>
+                          <span>{t('rentals.changeStatus')}</span>
                         </DropdownMenuItem>
                         {rental.status === 'active' && (
                           <DropdownMenuItem onClick={() => onReturnItem(rental)} className="cursor-pointer">
-                            <span>Return Item</span>
+                            <span>{t('rentals.returnItem')}</span>
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuSeparator />
@@ -163,7 +137,7 @@ const RentalTable = ({
                           className="text-red-600 cursor-pointer"
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
-                          <span>Delete</span>
+                          <span>{t('common.delete')}</span>
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
