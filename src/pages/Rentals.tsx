@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useRequireAuth } from '@/lib/auth';
 import DashboardLayout from '../components/layout/DashboardLayout';
@@ -24,7 +23,7 @@ import {
   PaginationNext, 
   PaginationPrevious 
 } from '@/components/ui/pagination';
-import { generatePagination } from '@/lib/utils';
+import { formatDate, generatePagination } from '@/lib/utils';
 import { ItemDetailsDialog } from '@/components/inventory/ItemDetailsDialog';
 
 const ITEMS_PER_PAGE = 5;
@@ -51,6 +50,36 @@ const Rentals = () => {
   useEffect(() => {
     fetchRentals();
   }, [currentPage]);
+
+  const getStatusBadgeColor = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'bg-green-100 text-green-800';
+      case 'completed':
+        return 'bg-blue-100 text-blue-800';
+      case 'cancelled':
+        return 'bg-gray-100 text-gray-800';
+      case 'pending_adjustment':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'pending_creation':
+        return 'bg-purple-100 text-purple-800';
+      case 'ready':
+        return 'bg-teal-100 text-teal-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusDisplayName = (status: string) => {
+    switch (status) {
+      case 'pending_adjustment':
+        return 'Pending Adjustment';
+      case 'pending_creation':
+        return 'Being Created';
+      default:
+        return status.charAt(0).toUpperCase() + status.slice(1);
+    }
+  };
 
   const fetchRentals = async () => {
     try {

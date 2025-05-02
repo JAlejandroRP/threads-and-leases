@@ -1,7 +1,7 @@
 
 import { Rental } from '@/types/rental';
 import { Button } from '@/components/ui/button';
-import { formatDate } from '@/lib/utils';
+import { formatDate, getStatusBadgeColor, getStatusDisplayName } from '@/lib/utils';
 import { Eye, Trash2, MoreVertical } from 'lucide-react';
 import { 
   DropdownMenu,

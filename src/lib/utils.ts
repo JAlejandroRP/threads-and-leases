@@ -40,3 +40,39 @@ export const generatePagination = (currentPage: number, totalPages: number) => {
     totalPages,
   ];
 };
+
+/**
+ * Get the appropriate color class for a rental status badge
+ */
+export const getStatusBadgeColor = (status: string) => {
+  switch (status) {
+    case 'active':
+      return 'bg-green-100 text-green-800';
+    case 'completed':
+      return 'bg-blue-100 text-blue-800';
+    case 'cancelled':
+      return 'bg-gray-100 text-gray-800';
+    case 'pending_adjustment':
+      return 'bg-yellow-100 text-yellow-800';
+    case 'pending_creation':
+      return 'bg-purple-100 text-purple-800';
+    case 'ready':
+      return 'bg-teal-100 text-teal-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+};
+
+/**
+ * Convert status codes to display-friendly names
+ */
+export const getStatusDisplayName = (status: string) => {
+  switch (status) {
+    case 'pending_adjustment':
+      return 'Pending Adjustment';
+    case 'pending_creation':
+      return 'Being Created';
+    default:
+      return status.charAt(0).toUpperCase() + status.slice(1);
+  }
+};
