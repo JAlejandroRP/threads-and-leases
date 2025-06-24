@@ -1,4 +1,3 @@
-
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
@@ -200,12 +199,13 @@ const esResources = {
 i18n
   .use(initReactI18next)
   .init({
+    debug: true,
     resources: {
-      en: enResources,
-      es: esResources,
+      en: { translation: enResources },
+      es: { translation: esResources },
     },
-    lng: 'en', // Default language
-    fallbackLng: 'en',
+    lng: 'es', // Default language
+    // fallbackLng: 'es',
     interpolation: {
       escapeValue: false, // React already escapes values
     },
